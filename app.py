@@ -1,17 +1,22 @@
 import streamlit as st
 import joblib
 import re
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
+
+# تحميل stopwords لو مش موجودة
+nltk.download("stopwords")
 
 # تحميل الموديل والفيكتورايزر
 model = joblib.load("model/best_logistic_model.pkl")
 vectorizer = joblib.load("model/tfidf_vectorizer.pkl")
 
-# دالة الـpreprocess
+# تهيئة الـ stopwords والـ stemmer
 stop_words = set(stopwords.words("english"))
 stemmer = PorterStemmer()
 
+# دالة التنظيف
 def preprocess(text):
     text = text.lower()
     text = re.sub(r"http\S+|www\S+|[^a-zA-Z\s]", "", text)
@@ -20,14 +25,26 @@ def preprocess(text):
     return " ".join(cleaned)
 
 # واجهة Streamlit
-st.title("Amazon Reviews Sentiment Classifier")
+st.set_page_config(
+    page_title="Amazon Sentiment Classifier",
+    page_icon="🛒",
+    layout="centered"
+)
 
-review = st.text_area("Enter a product review:")
+st.title("🛍️ Amazon Reviews Sentiment Classifier")
+st.write("Enter your product review below to predict whether it's Positive or Negative.")
 
-if st.button("Analyze"):
-    clean = preprocess(review)
-    vec = vectorizer.transform([clean])
-    pred = model.predict(vec)[0]
-    prob = model.predict_proba(vec)[0].max()
-    label = "Positive 😊" if pred == 1 else "Negative ☹️"
-    st.success(f"Prediction: {label} (Confidence: {prob:.2%})")
+# Text area for input
+review = st.text_area("✍️ **Review:**", height=200)
+
+if st.button("🔍 Analyze Sentiment"):
+    if review.strip() == "":
+        st.warning("⚠️ Please enter a review text.")
+    else:
+        clean = preprocess(review)
+        vec = vectorizer.transform([clean])
+        pred = model.predict(vec)[0]
+        prob = model.predict_proba(vec)[0].max()
+        label = "✅ Positive 😊" if pred == 1 else "❌ Negative ☹️"
+        st.success(f"**Prediction:** {label}")
+        st.info(f"**Confidence:** {prob:.2%}")
